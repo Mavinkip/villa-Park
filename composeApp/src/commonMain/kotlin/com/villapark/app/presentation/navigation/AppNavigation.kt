@@ -19,7 +19,7 @@ import org.koin.dsl.module
 
 
 val appModule = module {
-    // firebase istaances
+    // firebase istaanc
     single{dev.gitlive.firebase.firestore.FirebaseFirestore.getInstance()}
     single{dev.gitlive.firebase.functions.FirebaseFunctions.getInstance()}
 
