@@ -36,7 +36,7 @@ val appModule = module {
 
 @Composable
 fun AppNavigation(){
-    // Initialize koin context
+    // Initialize koin conte
    koinApplication{
        modules(appModule)
    }
