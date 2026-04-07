@@ -1,15 +1,21 @@
 package com.villapark.app.data.repository
 
-// FILE: composeApp/src/commonMain/kotlin/com/villapark/app/data/repository/FirebaseRentRepository.kt
-// ACTION: REPLACE entire file
-
-import com.villapark.app.data.models.*
+import com.villapark.app.data.models.IssueStatus
+import com.villapark.app.data.models.MaintenanceIssue
+import com.villapark.app.data.models.Payment
+import com.villapark.app.data.models.PaymentStatus
+import com.villapark.app.data.models.Tenant
+import com.villapark.app.data.models.RentalUnitStatus
+import com.villapark.app.data.models.RentalUnit as RentalUnit
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.Direction
 import dev.gitlive.firebase.firestore.firestore
+import dev.gitlive.firebase.firestore.orderBy
+import dev.gitlive.firebase.firestore.where
 import dev.gitlive.firebase.functions.functions
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlin.runCatching
 
 class FirebaseRentRepository : RentRepository {
 
@@ -24,44 +30,37 @@ class FirebaseRentRepository : RentRepository {
     }
 
     override suspend fun getTenantByPhone(phoneNumber: String): Result<Tenant> = runCatching {
-        db.collection("tenants").whereEqualTo("phoneNumber", phoneNumber)
+        db.collection("tenants")
+            .where("phoneNumber", equalTo = phoneNumber)
             .get().documents.firstOrNull()?.data<Tenant>()
             ?: error("No tenant found for this phone number")
     }
 
     override suspend fun getTenantByEmail(email: String): Result<Tenant> = runCatching {
-        db.collection("tenants").whereEqualTo("email", email)
+        db.collection("tenants")
+            .where("email", equalTo = email)
             .get().documents.firstOrNull()?.data<Tenant>()
             ?: error("No tenant found for this email")
     }
 
     // ── Units ─────────────────────────────────────────────────────────────────
 
-    override suspend fun getUnit(unitId: String): Result<Unit> = runCatching {
-        db.collection("units").document(unitId).get().data<Unit>()
+    override suspend fun getRentalUnit(unitId: String): Result<RentalUnit> = runCatching {
+        db.collection("units").document(unitId).get().data<RentalUnit>()
             ?: error("Unit not found")
     }
 
-    override suspend fun getAllUnits(): Result<List<Unit>> = runCatching {
-        db.collection("units").get().documents.mapNotNull { it.data<Unit>() }
+    override suspend fun getAllRentalUnits(): Result<List<RentalUnit>> = runCatching {
+        db.collection("units").get().documents.mapNotNull { it.data<RentalUnit>() }
     }
 
-    override suspend fun getUnitsByStatus(status: UnitStatus): Result<List<Unit>> = runCatching {
-        db.collection("units").whereEqualTo("status", status.name)
-            .get().documents.mapNotNull { it.data<Unit>() }
+    override suspend fun getRentalUnitsByStatus(status: UnitStatus): Result<List<RentalUnit>> = runCatching {
+        db.collection("units")
+            .where("status", equalTo = status.name)
+            .get().documents.mapNotNull { it.data<RentalUnit>() }
     }
 
     // ── Payments ──────────────────────────────────────────────────────────────
-    // HOW PAYHERO WORKS (simpler than Daraja):
-    //   1. App calls Cloud Function with amount + phone + type
-    //   2. Cloud Function calls PayHero API (POST /api/v2/payments) with Basic Auth
-    //   3. PayHero sends STK push to tenant's phone
-    //   4. Tenant enters PIN
-    //   5. PayHero sends callback to our Cloud Function URL
-    //   6. Cloud Function updates Firestore payment doc → status = COMPLETED
-    //   7. Our Flow fires, UI shows success
-    //
-    // PayHero only needs: username, password, channel_id — no token refresh needed!
 
     override suspend fun initiateRentPayment(
         tenantId: String,
@@ -78,7 +77,7 @@ class FirebaseRentRepository : RentRepository {
             )
         )
         @Suppress("UNCHECKED_CAST")
-        (result.data as Map<String, Any>)["paymentId"] as? String
+        (result.data() as Map<String, Any>)["paymentId"] as? String
             ?: error("No paymentId returned from Cloud Function")
     }
 
@@ -97,7 +96,7 @@ class FirebaseRentRepository : RentRepository {
             )
         )
         @Suppress("UNCHECKED_CAST")
-        (result.data as Map<String, Any>)["paymentId"] as? String
+        (result.data() as Map<String, Any>)["paymentId"] as? String
             ?: error("No paymentId returned from Cloud Function")
     }
 
@@ -116,7 +115,7 @@ class FirebaseRentRepository : RentRepository {
             )
         )
         @Suppress("UNCHECKED_CAST")
-        (result.data as Map<String, Any>)["paymentId"] as? String
+        (result.data() as Map<String, Any>)["paymentId"] as? String
             ?: error("No paymentId returned from Cloud Function")
     }
 
@@ -128,7 +127,7 @@ class FirebaseRentRepository : RentRepository {
 
     override suspend fun getPaymentHistory(tenantId: String): Result<List<Payment>> = runCatching {
         db.collection("payments")
-            .whereEqualTo("tenantId", tenantId)
+            .where("tenantId", equalTo = tenantId)
             .orderBy("timestamp", Direction.DESCENDING)
             .get().documents.mapNotNull { it.data<Payment>() }
     }
@@ -141,21 +140,21 @@ class FirebaseRentRepository : RentRepository {
 
     override suspend fun getMaintenanceIssues(tenantId: String): Result<List<MaintenanceIssue>> = runCatching {
         db.collection("maintenance")
-            .whereEqualTo("tenantId", tenantId)
+            .where("tenantId", equalTo = tenantId)
             .orderBy("createdAt", Direction.DESCENDING)
             .get().documents.mapNotNull { it.data<MaintenanceIssue>() }
     }
 
     override suspend fun getAllMaintenanceIssues(): Result<List<MaintenanceIssue>> = runCatching {
+        // notequalTo requires the field to also be in orderBy — Firestore rule
         db.collection("maintenance")
-            .whereNotEqualTo("status", IssueStatus.RESOLVED.name)
+            .orderBy("status", Direction.ASCENDING)
             .orderBy("createdAt", Direction.DESCENDING)
             .get().documents.mapNotNull { it.data<MaintenanceIssue>() }
     }
 
-    // FIXED: return type is Result<Unit> — was Result<Boolean> in original code
-    override suspend fun updateIssueStatus(issueId: String, status: IssueStatus): Result<Unit> = runCatching {
-        db.collection("maintenance").document(issueId).update(mapOf("status" to status.name))
+    override suspend fun updateIssueStatus(issueId: String, status: IssueStatus): Result<kotlin.Unit> = runCatching {
+        db.collection("maintenance").document(issueId).update("status" to status.name)
     }
 
     // ── Property config ───────────────────────────────────────────────────────
@@ -166,8 +165,7 @@ class FirebaseRentRepository : RentRepository {
     }
 
     // ── Helper ────────────────────────────────────────────────────────────────
-    // PayHero accepts Kenyan numbers in 07XXXXXXXX format (unlike Daraja which needs 254...)
-    // This normalises all input formats to 07XXXXXXXX
+
     private fun formatPhone(phone: String): String {
         val cleaned = phone.trim().replace(" ", "").replace("-", "")
         return when {

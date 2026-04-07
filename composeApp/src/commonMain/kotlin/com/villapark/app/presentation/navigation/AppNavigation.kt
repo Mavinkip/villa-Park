@@ -1,9 +1,5 @@
 package com.villapark.app.presentation.navigation
 
-// FILE: composeApp/src/commonMain/kotlin/com/villapark/app/presentation/navigation/AppNavigation.kt
-// ACTION: REPLACE entire file
-// ALSO DELETE: Screen.kt in this same folder — it used the wrong navigation library
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -11,6 +7,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cafe.adriel.voyager.core.model.ScreenModel
+import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.getScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -22,7 +20,6 @@ import com.villapark.app.presentation.auth.LoginScreenContent
 import com.villapark.app.presentation.landlord.dashboard.LandlordViewModel
 import com.villapark.app.presentation.tenant.home.TenantHomeViewModel
 import com.villapark.app.presentation.tenant.payments.PaymentViewModel
-import com.villapark.app.presentation.tenant.issues.IssueReportViewModel
 
 @Composable
 fun AppNavigation() {
@@ -30,8 +27,6 @@ fun AppNavigation() {
         SlideTransition(navigator)
     }
 }
-
-// ─── AUTH ─────────────────────────────────────────────────────────────────────
 
 data object LoginScreen : Screen {
     @Composable
@@ -44,13 +39,11 @@ data object LoginScreen : Screen {
     }
 }
 
-// ─── TENANT ───────────────────────────────────────────────────────────────────
-
 data class TenantHomeScreen(val tenantId: String) : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val viewModel: TenantHomeViewModel = getScreenModel()
+        val viewModel = getScreenModel<TenantHomeViewModel>()
         com.villapark.app.presentation.tenant.home.TenantHomeScreen(
             viewModel = viewModel,
             tenantId = tenantId,
@@ -68,7 +61,7 @@ data class PaymentScreen(
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val viewModel: PaymentViewModel = getScreenModel()
+        val viewModel = getScreenModel<PaymentViewModel>()
         com.villapark.app.presentation.tenant.payments.PaymentScreenContent(
             viewModel = viewModel,
             tenantId = tenantId,
@@ -94,17 +87,13 @@ data class PaymentHistoryScreen(val tenantId: String) : Screen {
     }
 }
 
-// ─── LANDLORD ─────────────────────────────────────────────────────────────────
-
 data object LandlordDashboardScreen : Screen {
     @Composable
     override fun Content() {
-        val viewModel: LandlordViewModel = getScreenModel()
+        val viewModel = getScreenModel<LandlordViewModel>()
         com.villapark.app.presentation.landlord.dashboard.LandlordDashboard(viewModel = viewModel)
     }
 }
-
-// ─── PLACEHOLDER (removed as real screens are built each session) ─────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

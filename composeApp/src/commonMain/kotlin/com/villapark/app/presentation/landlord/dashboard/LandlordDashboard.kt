@@ -45,7 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.villapark.app.data.models.MaintenanceIssue
 import com.villapark.app.data.models.Priority
-import com.villapark.app.data.models.UnitStatus
+import com.villapark.app.data.models.RentalUnitStatus
 import kotlin.math.max
 
 @OptIn(ExperimentalMaterial3Api::class)

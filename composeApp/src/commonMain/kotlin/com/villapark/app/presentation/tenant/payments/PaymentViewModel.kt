@@ -1,10 +1,7 @@
 package com.villapark.app.presentation.tenant.payments
 
-// FILE: composeApp/src/commonMain/kotlin/com/villapark/app/presentation/tenant/payments/PaymentViewModel.kt
-// ACTION: REPLACE entire file (was empty)
-
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import cafe.adriel.voyager.core.model.ScreenModel
+import cafe.adriel.voyager.core.model.screenModelScope
 import com.villapark.app.data.models.Payment
 import com.villapark.app.data.models.PaymentStatus
 import com.villapark.app.data.models.PaymentType
@@ -13,14 +10,12 @@ import com.villapark.app.data.repository.RentRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-// ── State ─────────────────────────────────────────────────────────────────────
-
 data class PaymentUiState(
     val isLoadingConfig: Boolean = false,
     val propertyConfig: PropertyConfig = PropertyConfig(),
     val phoneNumber: String = "",
     val amount: String = "",
-    val meterNumber: String = "",       // KPLC only
+    val meterNumber: String = "",
     val phoneError: String? = null,
     val amountError: String? = null,
     val meterError: String? = null,
@@ -30,12 +25,10 @@ data class PaymentUiState(
 
 sealed class PaymentFlowStage {
     object Form : PaymentFlowStage()
-    object WaitingForPin : PaymentFlowStage()   // STK sent, waiting for tenant to enter PIN
+    object WaitingForPin : PaymentFlowStage()
     object Success : PaymentFlowStage()
     data class Failed(val message: String) : PaymentFlowStage()
 }
-
-// ── Events ────────────────────────────────────────────────────────────────────
 
 sealed class PaymentEvent {
     data class LoadConfig(val tenantId: String) : PaymentEvent()
@@ -46,9 +39,7 @@ sealed class PaymentEvent {
     object Retry : PaymentEvent()
 }
 
-// ── ViewModel ─────────────────────────────────────────────────────────────────
-
-class PaymentViewModel(private val repository: RentRepository) : ViewModel() {
+class PaymentViewModel(private val repository: RentRepository) : ScreenModel {
 
     private val _state = MutableStateFlow(PaymentUiState())
     val state: StateFlow<PaymentUiState> = _state.asStateFlow()
@@ -65,7 +56,7 @@ class PaymentViewModel(private val repository: RentRepository) : ViewModel() {
     }
 
     private fun loadConfig(tenantId: String) {
-        viewModelScope.launch {
+        screenModelScope.launch {
             _state.update { it.copy(isLoadingConfig = true) }
             repository.getPropertyConfig().onSuccess { config ->
                 _state.update { it.copy(propertyConfig = config, isLoadingConfig = false) }
@@ -94,7 +85,7 @@ class PaymentViewModel(private val repository: RentRepository) : ViewModel() {
         }
         if (hasError) return
 
-        viewModelScope.launch {
+        screenModelScope.launch {
             _state.update { it.copy(stage = PaymentFlowStage.WaitingForPin) }
 
             val result = when (type) {
@@ -134,24 +125,24 @@ class PaymentViewModel(private val repository: RentRepository) : ViewModel() {
                     }
                     PaymentStatus.FAILED -> _state.update {
                         it.copy(stage = PaymentFlowStage.Failed(
-                            "Payment failed. This can happen if the wrong PIN was entered or your M-Pesa balance was insufficient."
+                            "Payment failed. Wrong PIN or insufficient M-Pesa balance."
                         ))
                     }
                     PaymentStatus.CANCELLED -> _state.update {
                         it.copy(stage = PaymentFlowStage.Failed(
-                            "You cancelled the M-Pesa prompt. Tap Try Again if you want to retry."
+                            "You cancelled the M-Pesa prompt. Tap Try Again to retry."
                         ))
                     }
                     PaymentStatus.PENDING -> { /* still waiting */ }
                 }
             }
-            .catch { e ->
+            .catch {
                 _state.update {
                     it.copy(stage = PaymentFlowStage.Failed(
-                        "Connection lost while waiting for payment. Check your payment history to see if it went through."
+                        "Connection lost. Check your payment history to see if it went through."
                     ))
                 }
             }
-            .launchIn(viewModelScope)
+            .launchIn(screenModelScope)
     }
 }
