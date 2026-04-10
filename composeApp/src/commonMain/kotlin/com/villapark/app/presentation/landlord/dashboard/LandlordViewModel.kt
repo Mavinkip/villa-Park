@@ -4,23 +4,14 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.villapark.app.data.models.IssueStatus
 import com.villapark.app.data.models.MaintenanceIssue
-import com.villapark.app.data.models.RentalUnitStatus
-import com.villapark.app.data.models.RentalUnit as RentalUnit
+import com.villapark.app.data.models.RentalUnit
+import com.villapark.app.data.models.UnitStatus
 import com.villapark.app.data.repository.RentRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-data class LandlordState(
-    val units: List<RentalUnit> = emptyList(),
-    val maintenanceIssues: List<MaintenanceIssue> = emptyList(),
-    val selectedTab: Int = 0,
-    val isLoading: Boolean = false,
-    val error: String? = null,
-    val stats: DashboardStats = DashboardStats()
-)
 
 data class DashboardStats(
     val totalUnits: Int = 0,
@@ -30,69 +21,75 @@ data class DashboardStats(
     val monthlyRevenue: Double = 0.0
 )
 
+data class LandlordState(
+    val units: List<RentalUnit> = emptyList(),
+    val maintenanceIssues: List<MaintenanceIssue> = emptyList(),
+    val stats: DashboardStats = DashboardStats(),
+    val isLoading: Boolean = false,
+    val selectedTab: Int = 0,
+    val error: String? = null
+)
+
 sealed class LandlordEvent {
-    object LoadData : LandlordEvent()
+    data class RefreshData(val force: Boolean = false) : LandlordEvent()
+    data class SelectTab(val tab: Int) : LandlordEvent()
     data class MarkIssueAsFixed(val issueId: String) : LandlordEvent()
     data class CallPlumber(val issueId: String) : LandlordEvent()
-    data class SelectTab(val index: Int) : LandlordEvent()
-    data class RefreshData(val force: Boolean = false) : LandlordEvent()
 }
 
-class LandlordViewModel(private val repository: RentRepository) : ScreenModel {
-
+class LandlordViewModel(
+    private val repository: RentRepository
+) : ScreenModel {
+    
     private val _state = MutableStateFlow(LandlordState())
     val state: StateFlow<LandlordState> = _state.asStateFlow()
-
-    init { loadData() }
-
+    
     fun onEvent(event: LandlordEvent) {
         when (event) {
-            LandlordEvent.LoadData -> loadData()
+            is LandlordEvent.RefreshData -> loadData()
+            is LandlordEvent.SelectTab -> selectTab(event.tab)
             is LandlordEvent.MarkIssueAsFixed -> markIssueAsFixed(event.issueId)
             is LandlordEvent.CallPlumber -> callPlumber(event.issueId)
-            is LandlordEvent.SelectTab -> selectTab(event.index)
-            is LandlordEvent.RefreshData -> loadData()
         }
     }
-
-    fun loadData() {
-        screenModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-            try {
-                val units: List<RentalUnit> = repository.getAllRentalUnits().getOrElse { emptyList() }
-                val issues: List<MaintenanceIssue> = repository.getAllMaintenanceIssues().getOrElse { emptyList() }
-                _state.update {
-                    it.copy(
-                        units = units,
-                        maintenanceIssues = issues,
-                        stats = calculateStats(units, issues),
-                        isLoading = false
-                    )
-                }
-            } catch (e: Exception) {
-                _state.update { it.copy(isLoading = false, error = "Error: ${e.message}") }
-            }
-        }
+    
+    fun selectTab(tab: Int) {
+        _state.update { it.copy(selectedTab = tab) }
     }
-
+    
     fun markIssueAsFixed(issueId: String) {
         screenModelScope.launch {
             repository.updateIssueStatus(issueId, IssueStatus.RESOLVED)
             loadData()
         }
     }
-
-    private fun callPlumber(issueId: String) {
+    
+    fun callPlumber(issueId: String) {
+        // TODO: Implement call plumber functionality
+    }
+    
+    fun loadData() {
         screenModelScope.launch {
-            repository.updateIssueStatus(issueId, IssueStatus.IN_PROGRESS)
-            loadData()
+            _state.update { it.copy(isLoading = true, error = null) }
+            
+            val unitsResult = repository.getAllRentalUnits()
+            val units = unitsResult.getOrNull() ?: emptyList()
+            
+            val issuesResult = repository.getAllMaintenanceIssues()
+            val issues = issuesResult.getOrNull() ?: emptyList()
+            
+            _state.update {
+                it.copy(
+                    units = units,
+                    maintenanceIssues = issues,
+                    stats = calculateStats(units, issues),
+                    isLoading = false,
+                    error = if (units.isEmpty() && issues.isEmpty()) "Failed to load data" else null
+                )
+            }
         }
     }
-
-    fun selectTab(index: Int) {
-        _state.update { it.copy(selectedTab = index) }
-    }
-
+    
     private fun calculateStats(
         units: List<RentalUnit>,
         issues: List<MaintenanceIssue>

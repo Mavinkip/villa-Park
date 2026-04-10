@@ -1,8 +1,5 @@
 package com.villapark.app.presentation.tenant.payments
 
-// FILE: composeApp/src/commonMain/kotlin/com/villapark/app/presentation/tenant/payments/PaymentScreen.kt
-// ACTION: REPLACE entire file (was empty)
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -44,7 +41,6 @@ fun PaymentScreenContent(
                     })
                 },
                 navigationIcon = {
-                    // Hide back button while waiting for PIN — keeps tenant on screen
                     if (state.stage is PaymentFlowStage.Form || state.stage is PaymentFlowStage.Failed) {
                         IconButton(onClick = onBack) { Text("←", fontSize = 20.sp) }
                     }
@@ -67,22 +63,19 @@ fun PaymentScreenContent(
     }
 }
 
-// ── FORM ──────────────────────────────────────────────────────────────────────
-
 @Composable
-private fun FormContent(
+fun FormContent(
     state: PaymentUiState,
     paymentType: PaymentType,
     tenantId: String,
     onEvent: (PaymentEvent) -> Unit
 ) {
-    val unitId = "unit_placeholder" // will come from tenant data in Session 5
+    val unitId = "unit_placeholder"
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Destination card — shows WHERE money is going before tenant pays
         DestinationCard(state, paymentType)
 
         if (paymentType == PaymentType.KPLC_TOKEN) {
@@ -146,7 +139,7 @@ private fun FormContent(
 }
 
 @Composable
-private fun DestinationCard(state: PaymentUiState, paymentType: PaymentType) {
+fun DestinationCard(state: PaymentUiState, paymentType: PaymentType) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             when (paymentType) {
@@ -182,10 +175,8 @@ private fun DestinationCard(state: PaymentUiState, paymentType: PaymentType) {
     }
 }
 
-// ── WAITING ───────────────────────────────────────────────────────────────────
-
 @Composable
-private fun WaitingContent() {
+fun WaitingContent() {
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -204,10 +195,8 @@ private fun WaitingContent() {
     }
 }
 
-// ── SUCCESS ───────────────────────────────────────────────────────────────────
-
 @Composable
-private fun SuccessContent(state: PaymentUiState, paymentType: PaymentType, onDone: () -> Unit) {
+fun SuccessContent(state: PaymentUiState, paymentType: PaymentType, onDone: () -> Unit) {
     val clipboard = LocalClipboardManager.current
     val payment = state.completedPayment
 
@@ -229,7 +218,6 @@ private fun SuccessContent(state: PaymentUiState, paymentType: PaymentType, onDo
             }
         }
 
-        // KPLC TOKEN — only shown when electricity was purchased and token exists
         if (paymentType == PaymentType.KPLC_TOKEN && payment?.kplcToken?.isNotBlank() == true) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -277,7 +265,7 @@ private fun SuccessContent(state: PaymentUiState, paymentType: PaymentType, onDo
 }
 
 @Composable
-private fun ReceiptRow(label: String, value: String) {
+fun ReceiptRow(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -285,10 +273,8 @@ private fun ReceiptRow(label: String, value: String) {
     }
 }
 
-// ── FAILED ────────────────────────────────────────────────────────────────────
-
 @Composable
-private fun FailedContent(message: String, onRetry: () -> Unit, onCancel: () -> Unit) {
+fun FailedContent(message: String, onRetry: () -> Unit, onCancel: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

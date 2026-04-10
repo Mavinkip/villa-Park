@@ -1,8 +1,5 @@
 package com.villapark.app.domain.di
 
-// FILE: composeApp/src/commonMain/kotlin/com/villapark/app/domain/di/Modules.kt
-// ACTION: REPLACE entire file
-
 import com.villapark.app.data.repository.FirebaseRentRepository
 import com.villapark.app.data.repository.RentRepository
 import com.villapark.app.presentation.landlord.dashboard.LandlordViewModel

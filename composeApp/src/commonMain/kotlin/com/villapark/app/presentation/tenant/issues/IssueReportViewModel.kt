@@ -1,11 +1,24 @@
 package com.villapark.app.presentation.tenant.issues
 
-// FILE: composeApp/src/commonMain/kotlin/com/villapark/app/presentation/tenant/issues/IssueReportViewModel.kt
-// ACTION: REPLACE entire file (was empty)
-
-import androidx.lifecycle.ViewModel
+import cafe.adriel.voyager.core.model.ScreenModel
+import cafe.adriel.voyager.core.model.screenModelScope
 import com.villapark.app.data.repository.RentRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
-// Stub ViewModel so Koin can inject it and the app compiles.
-// Full implementation comes in Session 6 when we build the Issue Report screen.
-class IssueReportViewModel(private val repository: RentRepository) : ViewModel()
+data class IssueReportState(
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val success: Boolean = false
+)
+
+class IssueReportViewModel(
+    private val repository: RentRepository
+) : ScreenModel {
+    private val _state = MutableStateFlow(IssueReportState())
+    val state: StateFlow<IssueReportState> = _state.asStateFlow()
+    
+    // TODO: Implement issue reporting functionality in Session 6
+}

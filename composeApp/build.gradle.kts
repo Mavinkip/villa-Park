@@ -6,13 +6,11 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
+    id("com.google.gms.google-services")
 }
 
 kotlin {
     androidTarget()
-    
-    // Desktop target disabled for now
-    // jvm("desktop")
     
     sourceSets {
         val androidMain by getting {
@@ -21,13 +19,11 @@ kotlin {
                 implementation(libs.androidx.activity.compose)
                 implementation(libs.koin.core)
                 implementation(libs.koin.android)
-                implementation(libs.firebase.firestore)
-                implementation(libs.firebase.auth)
-                implementation(libs.firebase.functions)
-                implementation(libs.gitlive.firebase.firestore)
-                implementation(libs.gitlive.firebase.auth)
-                implementation(libs.gitlive.firebase.functions)
                 implementation(libs.kotlinx.coroutines.android)
+                // Android-specific Firebase - no platform() needed
+                implementation("com.google.firebase:firebase-firestore-ktx:25.1.0")
+                implementation("com.google.firebase:firebase-auth-ktx:23.1.0")
+                implementation("com.google.firebase:firebase-functions-ktx:21.0.0")
             }
         }
         
@@ -45,10 +41,11 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.datetime)
-                implementation(libs.gitlive.firebase.common)
-                implementation(libs.gitlive.firebase.firestore)
-                implementation(libs.gitlive.firebase.functions)
-                implementation(libs.gitlive.firebase.auth)
+                // GitLive Firebase for common code
+                implementation("dev.gitlive:firebase-common:2.0.0")
+                implementation("dev.gitlive:firebase-firestore:2.0.0")
+                implementation("dev.gitlive:firebase-functions:2.0.0")
+                implementation("dev.gitlive:firebase-auth:2.0.0")
             }
         }
     }
@@ -56,11 +53,11 @@ kotlin {
 
 android {
     namespace = "com.villapark.app"
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         applicationId = "com.villapark.app"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
     }
@@ -75,6 +72,5 @@ android {
         debugImplementation(compose.uiTooling)
         implementation(libs.androidx.core.ktx)
         implementation(libs.androidx.appcompat)
-        implementation(platform(libs.firebase.bom))
     }
 }

@@ -11,8 +11,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 
 data class TenantHomeState(
     val tenant: Tenant? = null,
@@ -27,8 +25,9 @@ sealed class TenantHomeEvent {
     data class RefreshData(val tenantId: String) : TenantHomeEvent()
 }
 
-class TenantHomeViewModel : ScreenModel, KoinComponent {
-    private val repository: RentRepository by inject()
+class TenantHomeViewModel(
+    private val repository: RentRepository
+) : ScreenModel {
     
     private val _state = MutableStateFlow(TenantHomeState())
     val state: StateFlow<TenantHomeState> = _state.asStateFlow()
